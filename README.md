@@ -20,30 +20,34 @@ A demo accounting system built with Blazor Server and .NET 8.
 ## Setup Instructions
 
 ### 1. Clone the Repository
-git clone https://github.com/ardiangrezda/GrezdaAccountingAR.git 
-cd GrezdaAccountingAR/Accounting
+`git clone https://github.com/ardiangrezda/PublicGrezdaAccountingAR`
+
+`cd PublicGrezdaAccountingAR/Accounting`
 
 ### 2. Configure Database
 
 Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Server name:
-{ "ConnectionStrings": 
-	{ "DefaultConnection": "Server=YOUR_SERVER\SQLEXPRESS;Database=GrezdaAccountingPublicDB;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true" 
-	}, 
-   "DatabaseProvider": "SqlServer" 
-}
+
+	{ "ConnectionStrings": {	
+		"DefaultConnection": "Server=YOUR_SERVER\SQLEXPRESS;Database=GrezdaAccountingPublicDB;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true" 
+		},	
+		"DatabaseProvider": "SqlServer"
+	}
 
 **Replace `YOUR_SERVER` with your computer name or SQL Server instance.**
 
 ### 3. Create Database
-Create database and tables
-dotnet ef database update
-Add sample data (users, roles, modules)
-sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
+
+- Create database and tables
+	`dotnet ef database update`
+- Add sample data (users, roles, modules)
+	'sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"`
 
 ### 4. Run the Application
-dotnet run
 
-Open your browser: `https://localhost:7123`
+- dotnet run
+
+	Open your browser: `https://localhost:7123`
 
 ### 5. Login
 
@@ -56,23 +60,32 @@ Open your browser: `https://localhost:7123`
 ### Reset Database
 
 If you need to start fresh:
-Drop database
-sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "drop-database.sql"
-Recreate
-dotnet ef database update
-Reseed data
-sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
+
+- Drop database
+	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "drop-database.sql"`
+- Recreate
+
+	dotnet ef database update
+- Reseed data
+    
+	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
 
 ### Clear Data Only
 
-To keep tables but clear all data:
-sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -d "GrezdaAccountingPublicDB" -Q " DELETE FROM UserSettings; DELETE FROM UserModuleAccesses; DELETE FROM UserBusinessUnits; DELETE FROM CompanySettings; DELETE FROM LocalizationStrings; DELETE FROM Submodules; DELETE FROM Modules; DELETE FROM BusinessUnits; DELETE FROM Languages; DELETE FROM Currencies; DELETE FROM AspNetUserRoles; DELETE FROM AspNetUsers; DELETE FROM AspNetRoles; "
-Then reseed
-sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
+- To keep tables but clear all data:
+
+	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -d "GrezdaAccountingPublicDB" -Q " DELETE FROM UserSettings; DELETE FROM UserModuleAccesses; DELETE FROM UserBusinessUnits; DELETE FROM CompanySettings; DELETE FROM LocalizationStrings; DELETE FROM Submodules; DELETE FROM Modules; DELETE FROM BusinessUnits; DELETE FROM Languages; DELETE FROM Currencies; DELETE FROM AspNetUserRoles; DELETE FROM AspNetUsers; DELETE FROM AspNetRoles; "
+
+
+- Then reseed
+
+	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
 
 ## Project Structure
-GrezdaAccountingAR/ 
-	├── Accounting/ │ 
+
+PublicGrezdaAccountingAR/
+
+	├── Accounting/ │
 	├── Data/                   # Database context │
 	├── Models/                 # Entity models │
 	├── Pages/                  # Blazor pages │
@@ -96,12 +109,15 @@ GrezdaAccountingAR/
 ## Troubleshooting
 
 **Database connection failed?**
-- Check your SQL Server instance name with: `sqlcmd -L`
+- Check your SQL Server instance name with:
+   `sqlcmd -L`
 - Make sure SQL Server is running
 
 **Migration errors?**
-- Clean and rebuild: `dotnet clean && dotnet build`
-- Remove migrations: `dotnet ef migrations remove`
+- Clean and rebuild: 
+  `dotnet clean && dotnet build`
+- Remove migrations: 
+  `dotnet ef migrations remove`
 
 **Port already in use?**
 - Change ports in `Properties/launchSettings.json`
@@ -125,5 +141,5 @@ Demo version for educational purposes.
 
 ---
 
-**Questions?** Open an issue on [GitHub](https://github.com/ardiangrezda/GrezdaAccountingAR)
+**Questions?** Open an issue on [GitHub](https://github.com/ardiangrezda/PublicGrezdaAccountingAR)
 
