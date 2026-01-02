@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Accounting.Data.Migrations
+namespace Accounting.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251125134054_AddCompanySettings")]
-    partial class AddCompanySettings
+    [Migration("20260102113135_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -558,6 +558,258 @@ namespace Accounting.Data.Migrations
                     b.ToTable("Modules");
                 });
 
+            modelBuilder.Entity("Accounting.Models.PurchaseCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("DescriptionStringId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("NameStringId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DescriptionStringId");
+
+                    b.HasIndex("NameStringId");
+
+                    b.ToTable("PurchaseCategories");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BusinessUnitId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ExternalInvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("InvoiceExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsCancelled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPosted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsReturn")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("OriginalInvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OriginalInvoiceNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("PostedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PurchaseCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReturnReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("SequentialNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Shipment")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SupplierCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal>("TotalDiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalVATAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalWithVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalWithoutVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("TradingAgentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessUnitId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("LastModifiedByUserId");
+
+                    b.HasIndex("OriginalInvoiceId");
+
+                    b.HasIndex("PurchaseCategoryId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("TradingAgentId");
+
+                    b.ToTable("PurchaseInvoices");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoiceItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArticleCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ArticleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<int?>("CurrencyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DiscountPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int?>("OriginalInvoiceItemId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PriceWithVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceWithoutVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PurchaseInvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<string>("UnitCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UnitId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("VATAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("VATPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ValueWithVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ValueWithoutVAT")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleId");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("OriginalInvoiceItemId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("UnitId");
+
+                    b.ToTable("PurchaseInvoiceItems");
+                });
+
             modelBuilder.Entity("Accounting.Models.SalesCategory", b =>
                 {
                     b.Property<int>("Id")
@@ -927,6 +1179,31 @@ namespace Accounting.Data.Migrations
                     b.ToTable("Submodules");
                 });
 
+            modelBuilder.Entity("Accounting.Models.TradingAgent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TradingAgents");
+                });
+
             modelBuilder.Entity("Accounting.Models.Unit", b =>
                 {
                     b.Property<int>("UnitId")
@@ -1273,6 +1550,113 @@ namespace Accounting.Data.Migrations
                     b.Navigation("Language");
                 });
 
+            modelBuilder.Entity("Accounting.Models.PurchaseCategory", b =>
+                {
+                    b.HasOne("Accounting.Models.LocalizationString", "DescriptionString")
+                        .WithMany()
+                        .HasForeignKey("DescriptionStringId");
+
+                    b.HasOne("Accounting.Models.LocalizationString", "NameString")
+                        .WithMany()
+                        .HasForeignKey("NameStringId");
+
+                    b.Navigation("DescriptionString");
+
+                    b.Navigation("NameString");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoice", b =>
+                {
+                    b.HasOne("Accounting.Models.BusinessUnit", "BusinessUnit")
+                        .WithMany()
+                        .HasForeignKey("BusinessUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.ApplicationUser", "LastModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedByUserId");
+
+                    b.HasOne("Accounting.Models.PurchaseInvoice", "OriginalInvoice")
+                        .WithMany("Returns")
+                        .HasForeignKey("OriginalInvoiceId");
+
+                    b.HasOne("Accounting.Models.PurchaseCategory", "PurchaseCategory")
+                        .WithMany("PurchaseInvoices")
+                        .HasForeignKey("PurchaseCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.Subject", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.TradingAgent", "TradingAgent")
+                        .WithMany()
+                        .HasForeignKey("TradingAgentId");
+
+                    b.Navigation("BusinessUnit");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("LastModifiedByUser");
+
+                    b.Navigation("OriginalInvoice");
+
+                    b.Navigation("PurchaseCategory");
+
+                    b.Navigation("Supplier");
+
+                    b.Navigation("TradingAgent");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoiceItem", b =>
+                {
+                    b.HasOne("Accounting.Models.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
+                    b.HasOne("Accounting.Models.PurchaseInvoiceItem", "OriginalInvoiceItem")
+                        .WithMany("ReturnItems")
+                        .HasForeignKey("OriginalInvoiceItemId");
+
+                    b.HasOne("Accounting.Models.PurchaseInvoice", "PurchaseInvoice")
+                        .WithMany("Items")
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Accounting.Models.Unit", "Unit")
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Currency");
+
+                    b.Navigation("OriginalInvoiceItem");
+
+                    b.Navigation("PurchaseInvoice");
+
+                    b.Navigation("Unit");
+                });
+
             modelBuilder.Entity("Accounting.Models.SalesCategory", b =>
                 {
                     b.HasOne("Accounting.Models.LocalizationString", "DescriptionString")
@@ -1525,6 +1909,23 @@ namespace Accounting.Data.Migrations
             modelBuilder.Entity("Accounting.Models.Module", b =>
                 {
                     b.Navigation("Submodules");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseCategory", b =>
+                {
+                    b.Navigation("PurchaseInvoices");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoice", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Returns");
+                });
+
+            modelBuilder.Entity("Accounting.Models.PurchaseInvoiceItem", b =>
+                {
+                    b.Navigation("ReturnItems");
                 });
 
             modelBuilder.Entity("Accounting.Models.SalesCategory", b =>
