@@ -1,0 +1,451 @@
+﻿@page "/purchases"
+@page "/purchases/{category}"
+@using Microsoft.AspNetCore.Authorization
+@using Models
+@using Services
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using Models.Enums
+@inject PurchaseService PurchaseService
+@inject StateContainer StateContainer
+@inject NavigationManager Navigation
+@inject ILocalizationService LocalizationService
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserModuleAccessService UserModuleAccessService
+@attribute [Authorize]
+
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>@allPurchasesLabel</h1>
+                
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="btn-group" role="group">
+                    <button class="btn @(selectedStatus == null ? "btn-primary" : "btn-outline-primary")" 
+                            @onclick="() => FilterByStatus(null)">
+                        @allLabel
+                    </button>
+                    <button class="btn @(selectedStatus == PurchaseStatus.Draft ? "btn-secondary" : "btn-outline-secondary")" 
+                            @onclick="() => FilterByStatus(PurchaseStatus.Draft)">
+                        @draftLabel
+                    </button>
+                    <button class="btn @(selectedStatus == PurchaseStatus.Approved ? "btn-info" : "btn-outline-info")" 
+                            @onclick="() => FilterByStatus(PurchaseStatus.Approved)">
+                        @approvedLabel
+                    </button>
+                    <button class="btn @(selectedStatus == PurchaseStatus.Received ? "btn-primary" : "btn-outline-primary")" 
+                            @onclick="() => FilterByStatus(PurchaseStatus.Received)">
+                        @receivedLabel
+                    </button>
+                    <button class="btn @(selectedStatus == PurchaseStatus.Posted ? "btn-success" : "btn-outline-success")" 
+                            @onclick="() => FilterByStatus(PurchaseStatus.Posted)">
+                        @postedLabel
+                    </button>
+                    <button class="btn @(selectedStatus == PurchaseStatus.Paid ? "btn-dark" : "btn-outline-dark")" 
+                            @onclick="() => FilterByStatus(PurchaseStatus.Paid)">
+                        @paidLabel
+                    </button>
+                </div>
+    
+                <button class="btn btn-success" @onclick="CreateNewPurchase" disabled="@(categoryId == null)">
+                    <i class="fas fa-plus"></i> @newPurchaseLabel
+                </button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">@loadingLabel</span>
+                    </div>
+                </div>
+            }
+            else if (purchases.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>@internalNrLabel</th>
+                                <th>@supplierInvoiceNumberLabel</th>
+                                <th>@dateLabel</th>
+                                <th>@supplierLabel</th>
+                                <th>@totalLabel</th>
+                                <th>@statusLabel</th>
+                                <th>@actionsLabel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var purchase in purchases)
+                            {
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">@purchase.InvoiceNumber</small>
+                                    </td>
+                                    <td>
+                                        <strong>@purchase.ExternalInvoiceNumber</strong>
+                                    </td>
+                                    <td>@purchase.InvoiceDate.ToShortDateString()</td>
+                                    <td>@purchase.SupplierName</td>
+                                    <td class="text-end">@purchase.TotalWithVAT.ToString("N2")</td>
+                                    
+                                    <td>
+                                        @switch (purchase.StatusEnum)
+                                        {
+                                            case PurchaseStatus.Draft:
+                                                <span class="badge bg-secondary">@draftLabel</span>
+                                                break;
+                                            case PurchaseStatus.Approved:
+                                                <span class="badge bg-info">@approvedLabel</span>
+                                                break;
+                                            case PurchaseStatus.Received:
+                                                <span class="badge bg-primary">@receivedLabel</span>
+                                                break;
+                                            case PurchaseStatus.Posted:
+                                                <span class="badge bg-success">@postedLabel</span>
+                                                break;
+                                            case PurchaseStatus.Paid:
+                                                <span class="badge bg-dark">@paidLabel</span>
+                                                break;
+                                            case PurchaseStatus.OnHold:
+                                                <span class="badge bg-warning">@onHoldLabel</span>
+                                                break;
+                                            case PurchaseStatus.Cancelled:
+                                                <span class="badge bg-danger">@cancelledLabel</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">@purchase.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                    
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-info" @onclick="() => ViewPurchase(purchase.Id)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            @if (!purchase.IsPosted && !purchase.IsCancelled)
+                                            {
+                                                <button class="btn btn-sm btn-primary" @onclick="() => EditPurchase(purchase.Id)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    @noPurchaseFoundLabel
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Category { get; set; }
+
+    private List<Models.PurchaseInvoice> purchases = new();
+    private bool isLoading = true;
+    private string pageTitle = "Purchases";
+    private int? categoryId;
+    private string? currentUserId;
+    private int? currentBusinessUnitId;
+
+    // Localization variables
+    private string invoiceNumberLabel = string.Empty;
+    private string dateLabel = string.Empty;
+    private string totalLabel = string.Empty;
+    private string supplierLabel = string.Empty;
+    private string statusLabel = string.Empty;
+    private string actionsLabel = string.Empty;
+    private string allPurchasesLabel = string.Empty;
+    private string newPurchaseLabel = string.Empty;
+    private string draftLabel = string.Empty;
+    private string cancelledLabel = string.Empty;
+    private string postedLabel = string.Empty;
+    private string loadingLabel = string.Empty;
+    private string supplierInvoiceNumberLabel = string.Empty;
+    private string purchaseDetailsLabel = string.Empty;
+    private string approvedLabel = string.Empty;
+    private string receivedLabel = string.Empty;
+    private string paidLabel = string.Empty;
+    private string onHoldLabel = string.Empty;
+    private string internalNrLabel = string.Empty;
+    private string noPurchaseFoundLabel = string.Empty;
+    private string allLabel = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetCurrentUserAndBusinessUnit();
+
+        // Check if user is admin first
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("Admin");
+
+        // If admin and no category specified, redirect to domestic (or first available)
+        if (isAdmin && string.IsNullOrEmpty(Category))
+        {
+            Navigation.NavigateTo("/purchases/domestic", false);
+            return;
+        }
+
+        // For admin users, skip permission checks
+        if (isAdmin)
+        {
+            await SetCategoryId();
+            await LoadPurchases();
+            return;
+        }
+
+        // Permission enforcement for non-admin users
+        string? requestedVariant = null;
+        if (!string.IsNullOrEmpty(Category))
+        {
+            requestedVariant = Category?.ToUpper() switch
+            {
+                "IMPORT" => "P_IMP",
+                "DOMESTIC" => "P_DOM",
+                "EXPENSES" => "P_EXP",
+                "DEBIT-NOTE" => "P_DN",
+                "RETURNS" => "P_RET",
+                "REVERSE-CHARGE" => "P_REV",
+                _ => null
+            };
+        }
+
+        // Find Purchases module definition
+        var allModules = await UserModuleAccessService.GetModulesAsync();
+        var purchasesModule = allModules.FirstOrDefault(m =>
+            string.Equals(m.RazorPage, "Purchases.razor", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(m.Name, "Purchases", StringComparison.OrdinalIgnoreCase));
+
+        // If user provided a category, check access for that variant
+        if (!string.IsNullOrEmpty(requestedVariant) && purchasesModule != null)
+        {
+            var allowed = await UserModuleAccessService.HasAccessToPageAsync(currentUserId ?? "", "Purchases.razor", requestedVariant);
+            if (!allowed)
+            {
+                Navigation.NavigateTo("/forbidden");
+                return;
+            }
+        }
+
+        // If no category requested, and user has only variant access, redirect to first allowed variant
+        if (string.IsNullOrEmpty(requestedVariant) && purchasesModule != null)
+        {
+            // get submodules the user has access to
+            var allowedSubs = await UserModuleAccessService.GetAllowedSubmodulesAsync(currentUserId ?? "", purchasesModule.Id);
+            if (allowedSubs.Any())
+            {
+                // Check module-level access (module-level access allows all categories)
+                var allowedModules = await UserModuleAccessService.GetAllowedModulesAsync(currentUserId ?? "");
+                var hasModuleAccess = allowedModules.Any(m => m.Id == purchasesModule.Id);
+
+                if (!hasModuleAccess)
+                {
+                    // user only has submodule-level access -> navigate to first allowed category
+                    var firstVariant = allowedSubs.Select(s => s.VariantCode).FirstOrDefault(v => !string.IsNullOrEmpty(v));
+                    if (!string.IsNullOrEmpty(firstVariant))
+                    {
+                        // map variant-code back to route
+                        var route = firstVariant.ToLower() switch
+                        {
+                            "p_imp" => "/purchases/import",
+                            "p_dom" => "/purchases/domestic",
+                            "p_exp" => "/purchases/expenses",
+                            "p_dn" => "/purchases/debit-note",
+                            "p_ret" => "/purchases/returns",
+                            "p_rev" => "/purchases/reverse-charge",
+                            _ => "/purchases"
+                        };
+
+                        Navigation.NavigateTo(route);
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                // No allowed submodules and no module-level access -> if user has no access, redirect to forbidden
+                var allowedModulesForUser = await UserModuleAccessService.GetAllowedModulesAsync(currentUserId ?? "");
+                var hasModule = purchasesModule != null && allowedModulesForUser.Any(m => m.Id == purchasesModule.Id);
+                if (!hasModule)
+                {
+                    Navigation.NavigateTo("/forbidden");
+                    return;
+                }
+            }
+        }
+
+        await SetCategoryId();
+        await FilterByStatus(null);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocalizationStrings();
+    }
+
+    private async Task LoadLocalizationStrings()
+    {
+        var languageId = await LocalizationService.GetDefaultLanguageId();
+        invoiceNumberLabel = LocalizationService.GetString("STRING_00139", languageId) ?? "Invoice #";
+        dateLabel = LocalizationService.GetString("STRING_00140", languageId) ?? "Date";
+        totalLabel = LocalizationService.GetString("STRING_00141", languageId) ?? "Total";
+        supplierLabel = LocalizationService.GetString("STRING_00055", languageId) ?? "Supplier";
+        statusLabel = LocalizationService.GetString("STRING_00038", languageId) ?? "Status";
+        actionsLabel = LocalizationService.GetString("STRING_00039", languageId) ?? "Actions";
+        allPurchasesLabel = LocalizationService.GetString("STRING_00173", languageId) ?? "Purchases";
+        newPurchaseLabel = LocalizationService.GetString("STRING_00337", languageId) ?? "New Purchase";
+        draftLabel = LocalizationService.GetString("STRING_00158", languageId) ?? "Draft";
+        postedLabel = LocalizationService.GetString("STRING_00157", languageId) ?? "Posted";
+        cancelledLabel = LocalizationService.GetString("STRING_00156", languageId) ?? "Cancelled";
+        approvedLabel = LocalizationService.GetString("STRING_00342", languageId) ?? "Approved";
+        receivedLabel = LocalizationService.GetString("STRING_00343", languageId) ?? "Received";
+        paidLabel = LocalizationService.GetString("STRING_00344", languageId) ?? "Paid";
+        onHoldLabel = LocalizationService.GetString("STRING_00345", languageId) ?? "On Hold";
+
+        loadingLabel = LocalizationService.GetString("STRING_00266", languageId) ?? "Loading...";
+        supplierInvoiceNumberLabel = LocalizationService.GetString("STRING_00349", languageId) ?? "Supplier Invoice #";
+        internalNrLabel = LocalizationService.GetString("STRING_00365", languageId) ?? "Internal #";
+        noPurchaseFoundLabel = LocalizationService.GetString("STRING_00366", languageId) ?? "No purchase invoices found for your account. Click the \"New Purchase\" button to create one.";
+        allLabel = LocalizationService.GetString("STRING_00367", languageId) ?? "All";
+    }
+
+    private async Task GetCurrentUserAndBusinessUnit()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        var businessUnitIdString = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "currentBusinessUnit");
+        if (!string.IsNullOrEmpty(businessUnitIdString) && int.TryParse(businessUnitIdString, out var businessUnitId))
+        {
+            currentBusinessUnitId = businessUnitId;
+        }
+    }
+
+    private async Task SetCategoryId()
+    {
+        if (string.IsNullOrEmpty(Category))
+        {
+            categoryId = null;
+            pageTitle = allPurchasesLabel;
+            return;
+        }
+
+        var categories = await StateContainer.GetPurchaseCategoriesAsync(); 
+        var categoryCode = Category?.ToUpper() switch
+        {
+            "IMPORT" => "P_IMP",
+            "DOMESTIC" => "P_DOM",
+            "EXPENSES" => "P_EXP",
+            "DEBIT-NOTE" => "P_DN",
+            "RETURNS" => "P_RET",
+            "REVERSE-CHARGE" => "P_REV",
+            _ => null
+        };
+
+        var category = categories.FirstOrDefault(c => c.Code == categoryCode);
+        if (category != null)
+        {
+            categoryId = category.Id;
+            pageTitle = await GetLocalizedCategoryName(category) ?? "Purchases";
+        }
+    }
+
+    private async Task<string?> GetLocalizedCategoryName(PurchaseCategory category)
+    {
+        if (category?.NameString?.StringKey == null) return null;
+        var languageId = await LocalizationService.GetDefaultLanguageId();
+        return LocalizationService.GetString(category.NameString.StringKey, languageId);
+    }
+
+    private async Task LoadPurchases()
+    {
+        try
+        {
+            isLoading = true;
+            
+            var allPurchases = await PurchaseService.GetAllPurchasesAsync(
+                businessUnitId: currentBusinessUnitId,
+                userId: currentUserId,
+                includePosted: true,
+                categoryId: categoryId
+            );
+            
+            purchases = allPurchases;
+        }
+        catch (Exception)
+        {
+            // TODO: Add error handling
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreateNewPurchase()
+    {
+        if (categoryId.HasValue)
+        {
+            var categories = await StateContainer.GetPurchaseCategoriesAsync();
+            var category = categories.FirstOrDefault(c => c.Id == categoryId.Value);
+            
+            await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "selectedPurchaseCategoryId", categoryId.Value);
+            
+            if (category?.Code != null)
+            {
+                await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "currentPurchaseCategory", category.Code);
+            }
+        }
+        
+        Navigation.NavigateTo("/purchases/create");
+    }
+
+    private void ViewPurchase(int id)
+    {
+        Navigation.NavigateTo($"/purchases/{id}");
+    }
+
+    private void EditPurchase(int id)
+    {
+        Navigation.NavigateTo($"/purchases/edit/{id}");
+    }
+
+    private PurchaseStatus? selectedStatus = null;
+    
+    private async Task FilterByStatus(PurchaseStatus? status)
+    {
+        selectedStatus = status;
+        
+        if (status.HasValue)
+        {
+            // Use the service method we created earlier
+            purchases = await PurchaseService.GetPurchasesByStatusAsync(status.Value, currentBusinessUnitId);
+        }
+        else
+        {
+            // Load all (with posted included)
+            purchases = await PurchaseService.GetAllPurchasesAsync(
+                businessUnitId: currentBusinessUnitId,
+                userId: currentUserId,
+                includePosted: true,
+                categoryId: categoryId
+            );
+        }
+    }
+}

@@ -1,0 +1,220 @@
+@page "/admin/trading-agents"
+@using Microsoft.AspNetCore.Authorization
+@using Models
+@using Services
+@inject TradingAgentService TradingAgentService
+@inject ILocalizationService LocalizationService
+@inject IJSRuntime JSRuntime
+@inject ILocalizationService LocalizationService
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@pageTitle</h1>
+        <button class="btn btn-primary" @onclick="ShowCreateModal">
+            <i class="fas fa-plus"></i> @addNewLabel
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>@nameLabel</th>
+                                <th>@codeLabel</th>
+                                <th>@statusLabel</th>
+                                <th>@actionsLabel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var agent in agents)
+                            {
+                                <tr>
+                                    <td>@agent.Name</td>
+                                    <td>@agent.Code</td>
+                                    <td>
+                                        @if (agent.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info me-2" @onclick="() => ShowEditModal(agent)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        @if (agent.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteAgent(agent)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (showModal)
+{
+    <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? editAgentLabel : addNewLabel)</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentAgent" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">@nameLabel</label>
+                            <InputText class="form-control" @bind-Value="currentAgent.Name" />
+                            <ValidationMessage For="@(() => currentAgent.Name)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">@codeLabel</label>
+                            <InputText class="form-control" @bind-Value="currentAgent.Code" />
+                            <ValidationMessage For="@(() => currentAgent.Code)" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="currentAgent.IsActive" id="isActiveCheck" />
+                            <label class="form-check-label" for="isActiveCheck">
+                                @activeLabel
+                            </label>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">@cancelLabel</button>
+                            <button type="submit" class="btn btn-primary">@saveLabel</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TradingAgent> agents = new();
+    private TradingAgent currentAgent = new();
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isEditing = false;
+
+    // Localization
+    private string pageTitle = string.Empty;
+    private string addNewLabel = string.Empty;
+    private string editAgentLabel = string.Empty;
+    private string nameLabel = string.Empty;
+    private string codeLabel = string.Empty;
+    private string statusLabel = string.Empty;
+    private string actionsLabel = string.Empty;
+    private string activeLabel = string.Empty;
+    private string saveLabel = string.Empty;
+    private string cancelLabel = string.Empty;
+    private string areYouSureDeactivateLabel = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocalizationStrings();
+        await LoadData();
+    }
+
+    private async Task LoadLocalizationStrings()
+    {
+        var languageId = await LocalizationService.GetDefaultLanguageId();
+        
+        pageTitle = LocalizationService.GetString("STRING_00333", languageId) ?? "Trading Agents";
+        addNewLabel = LocalizationService.GetString("STRING_00334", languageId) ?? "Add New";
+        editAgentLabel = LocalizationService.GetString("STRING_00335", languageId) ?? "Edit Agent";
+        nameLabel = LocalizationService.GetString("STRING_00011", languageId) ?? "Name";
+        codeLabel = LocalizationService.GetString("STRING_00033", languageId) ?? "Code";
+        statusLabel = LocalizationService.GetString("STRING_00038", languageId) ?? "Status";
+        actionsLabel = LocalizationService.GetString("STRING_00039", languageId) ?? "Actions";
+        activeLabel = LocalizationService.GetString("STRING_00019", languageId) ?? "Active";
+        saveLabel = LocalizationService.GetString("STRING_00024", languageId) ?? "Save";
+        cancelLabel = LocalizationService.GetString("STRING_00025", languageId) ?? "Cancel";
+        areYouSureDeactivateLabel = LocalizationService.GetString("STRING_00336", languageId) ?? "Are you sure you want to deactivate {0}?";
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        // Pass true to include inactive agents so admins can see/reactivate them
+        agents = await TradingAgentService.GetAllAsync(includeInactive: true);
+        isLoading = false;
+    }
+
+    private void ShowCreateModal()
+    {
+        currentAgent = new TradingAgent { IsActive = true };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(TradingAgent agent)
+    {
+        currentAgent = new TradingAgent
+        {
+            Id = agent.Id,
+            Name = agent.Name,
+            Code = agent.Code,
+            IsActive = agent.IsActive
+        };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (isEditing)
+        {
+            await TradingAgentService.UpdateAsync(currentAgent);
+        }
+        else
+        {
+            await TradingAgentService.CreateAsync(currentAgent);
+        }
+
+        showModal = false;
+        await LoadData();
+    }
+
+    private async Task DeleteAgent(TradingAgent agent)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", string.Format(areYouSureDeactivateLabel, agent.Name)))
+        {
+            await TradingAgentService.DeleteAsync(agent.Id);
+            await LoadData();
+        }
+    }
+}

@@ -1,0 +1,23 @@
+﻿@page "/"
+@attribute [Authorize]
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<h1>Welcome to the Accounting System</h1>
+
+<p>Current user: @context.User?.Identity?.Name</p>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    private AuthenticationState? context;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState != null)
+        {
+            context = await authenticationState;
+        }
+    }
+}

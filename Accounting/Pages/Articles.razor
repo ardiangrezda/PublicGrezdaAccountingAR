@@ -1,0 +1,434 @@
+﻿@page "/articles"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Models
+@using Services
+@inject ArticleService ArticleService
+@inject ILocalizationService LocalizationService
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+<PageTitle>@pageTitle</PageTitle>
+
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Centered Title -->
+            <div class="text-center mb-4">
+                <h1>@pageTitle</h1>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="row mb-4">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="@searchPlaceholder"
+                               @bind="searchTerm" @onkeypress="HandleKeyPress" />
+                        <button class="btn btn-primary" @onclick="SearchArticles">
+                            <i class="fas fa-search"></i> @searchButtonText
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" value="@selectedCategory" @onchange="OnCategoryChanged">
+                        <option value="">@allCategoriesLabel</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="showInactive" checked="@showInactive" @onchange="OnShowInactiveChanged" />
+                        <label class="form-check-label" for="showInactive">@showInactiveLabel</label>
+                    </div>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-success" @onclick="CreateNewArticle">
+                        <i class="fas fa-plus"></i> @newArticleText
+                    </button>
+                </div>
+            </div>
+
+            <!-- Articles Table -->
+            <div class="card">
+                <div class="card-body">
+                    <!-- Pagination Info -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted">@string.Format(showingLabel, (currentPage - 1) * pageSize + 1, Math.Min(currentPage * pageSize, totalArticles), totalArticles)</span>
+                        </div>
+                        <div>
+                            <nav aria-label="Article pagination">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                                            @previousLabel
+                                        </button>
+                                    </li>
+                                    
+                                    @for (int i = 1; i <= totalPages; i++)
+                                    {
+                                        var pageNumber = i;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNumber)">
+                                                @pageNumber
+                                            </button>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                                            @nextLabel
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+
+                    @if (pagedArticles.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped compact-table">
+                                <thead>
+                                    <tr>
+                                        <th>@codeHeader</th>
+                                        <th>@barcodeHeader</th>
+                                        <th>@descriptionHeader</th>
+                                        <th>@categoryHeader</th>
+                                        <th>@unitHeader</th>
+                                        <th>@priceHeader</th>
+                                        <th>@vatHeader</th>
+                                        <th>@stockHeader</th>
+                                        <th>@statusHeader</th>
+                                        <th>@actionsHeader</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var article in pagedArticles)
+                                    {
+                                        <tr class="@(article.IsActive ? "" : "table-secondary")">
+                                            <td><code class="compact-code">@article.Code</code></td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(article.Barcode))
+                                                {
+                                                    <small>@article.Barcode</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>@article.Description</td>
+                                            <td>@article.Category</td>
+                                            <td>@article.Unit?.Code</td>
+                                            <td>@article.Price.ToString("F2") @article.Currency?.Code</td>
+                                            <td>
+                                                <span class="badge bg-info compact-badge">
+                                                    @article.VATTable?.VATName (@article.VATTable?.VATRate.ToString("F1")%)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="@(article.StockQuantity <= 10 ? "text-danger fw-bold" : "")">
+                                                    @FormatStockQuantity(article.StockQuantity)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (article.IsActive)
+                                                {
+                                                    <span class="badge bg-success compact-badge">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary compact-badge">Inactive</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-primary me-1 compact-btn"
+                                                        @onclick="() => ViewArticle(article.Id)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary compact-btn"
+                                                        @onclick="() => EditArticle(article.Id)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Bottom Pagination -->
+                        <div class="d-flex justify-content-end mt-3">
+                            <nav aria-label="Article pagination">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                                            @previousLabel
+                                        </button>
+                                    </li>
+                                    
+                                    @for (int i = 1; i <= totalPages; i++)
+                                    {
+                                        var pageNumber = i;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNumber)">
+                                                @pageNumber
+                                            </button>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                                            @nextLabel
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            @noArticlesFoundLabel
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Compact table styles */
+    .compact-table td,
+    .compact-table th {
+        padding: 0.4rem 0.5rem !important;
+        vertical-align: middle !important;
+        line-height: 1.2 !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Compact buttons */
+    .compact-btn {
+        padding: 0.2rem 0.4rem !important;
+        font-size: 0.875rem !important;
+        line-height: 1 !important;
+    }
+
+    .compact-btn i {
+        font-size: 0.875rem !important;
+    }
+
+    /* Compact badges */
+    .compact-badge {
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.7rem !important;
+        line-height: 1 !important;
+    }
+
+    /* Compact code display */
+    .compact-code {
+        font-size: 0.85rem !important;
+        padding: 0.1rem 0.3rem !important;
+    }
+
+    /* Remove bold from description */
+    .compact-table td .fw-bold {
+        font-weight: normal !important;
+    }
+</style>
+
+@code {
+    private ApplicationUser? currentUser;
+    private List<Article> articles = new();
+    private List<Article> pagedArticles = new();
+    private List<string> categories = new();
+    private string searchTerm = string.Empty;
+    private string selectedCategory = string.Empty;
+    private bool showInactive = false;
+
+    // Pagination properties
+    private int currentPage = 1;
+    private int pageSize = 10; // Page size is 10 for articles
+    private int totalArticles = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalArticles / pageSize);
+
+    // Localization strings
+    private string pageTitle = string.Empty;
+    private string newArticleText = string.Empty;
+    private string searchPlaceholder = string.Empty;
+    private string searchButtonText = string.Empty;
+    private string codeHeader = string.Empty;
+    private string barcodeHeader = string.Empty;
+    private string descriptionHeader = string.Empty;
+    private string categoryHeader = string.Empty;
+    private string unitHeader = string.Empty;
+    private string priceHeader = string.Empty;
+    private string vatHeader = string.Empty;
+    private string stockHeader = string.Empty;
+    private string statusHeader = string.Empty;
+    private string actionsHeader = string.Empty;
+    private string allCategoriesLabel = string.Empty;
+    private string showInactiveLabel = string.Empty;
+    private string previousLabel = string.Empty;
+    private string nextLabel = string.Empty;
+    private string showingLabel = string.Empty;
+    private string noArticlesFoundLabel = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            currentUser = await UserManager.GetUserAsync(authState.User);
+        }
+
+        await LoadLocalizationStrings();
+        await LoadArticles();
+        await LoadCategories();
+    }
+
+    private async Task LoadLocalizationStrings()
+    {
+        var languageId = await LocalizationService.GetDefaultLanguageId();
+
+        pageTitle = LocalizationService.GetString("STRING_00001", languageId) ?? "Articles";
+        newArticleText = LocalizationService.GetString("STRING_00002", languageId) ?? "New Article";
+        searchPlaceholder = LocalizationService.GetString("STRING_00003", languageId) ?? "Search articles...";
+        searchButtonText = LocalizationService.GetString("STRING_00004", languageId) ?? "Search";
+
+        codeHeader = LocalizationService.GetString("STRING_00033", languageId) ?? "Code";
+        barcodeHeader = LocalizationService.GetString("STRING_00010", languageId) ?? "Barcode";
+        descriptionHeader = LocalizationService.GetString("STRING_00042", languageId) ?? "Description";
+        categoryHeader = LocalizationService.GetString("STRING_00012", languageId) ?? "Category";
+        unitHeader = LocalizationService.GetString("STRING_00013", languageId) ?? "Unit";
+        priceHeader = LocalizationService.GetString("STRING_00014", languageId) ?? "Price";
+        vatHeader = LocalizationService.GetString("STRING_00015", languageId) ?? "VAT";
+        stockHeader = LocalizationService.GetString("STRING_00016", languageId) ?? "Stock Quantity";
+        statusHeader = LocalizationService.GetString("STRING_00038", languageId) ?? "Status";
+        actionsHeader = LocalizationService.GetString("STRING_00039", languageId) ?? "Actions";
+
+        allCategoriesLabel = LocalizationService.GetString("STRING_00281", languageId) ?? "All Categories";
+        showInactiveLabel = LocalizationService.GetString("STRING_00005", languageId) ?? "Show Inactive";
+        previousLabel = LocalizationService.GetString("STRING_00255", languageId) ?? "Previous";
+        nextLabel = LocalizationService.GetString("STRING_00256", languageId) ?? "Next";
+        showingLabel = LocalizationService.GetString("STRING_00282", languageId) ?? "Showing {0} to {1} of {2} articles";
+        noArticlesFoundLabel = LocalizationService.GetString("STRING_00283", languageId) ?? "No articles found.";
+    }
+
+    private async Task LoadArticles()
+    {
+        articles = await ArticleService.GetAllArticlesAsync(showInactive);
+        totalArticles = articles.Count;
+        UpdatePagedArticles();
+    }
+
+    private async Task LoadCategories()
+    {
+        categories = await ArticleService.GetCategoriesAsync();
+    }
+
+    private void UpdatePagedArticles()
+    {
+        pagedArticles = articles
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private async Task SearchArticles()
+    {
+        currentPage = 1;
+        articles = await ArticleService.SearchArticlesAsync(searchTerm, showInactive);
+        totalArticles = articles.Count;
+        UpdatePagedArticles();
+    }
+
+    private async Task OnCategoryChanged(ChangeEventArgs e)
+    {
+        currentPage = 1;
+        selectedCategory = e.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrEmpty(selectedCategory))
+        {
+            await LoadArticles();
+        }
+        else
+        {
+            articles = await ArticleService.GetArticlesByCategoryAsync(selectedCategory, showInactive);
+            totalArticles = articles.Count;
+            UpdatePagedArticles();
+        }
+    }
+
+    private async Task OnShowInactiveChanged(ChangeEventArgs e)
+    {
+        currentPage = 1;
+        showInactive = bool.Parse(e.Value?.ToString() ?? "false");
+        await LoadArticles();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchArticles();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagedArticles();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagedArticles();
+        }
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            UpdatePagedArticles();
+        }
+    }
+
+    private void ViewArticle(int id)
+    {
+        Navigation.NavigateTo($"/articles/{id}");
+    }
+
+    private void EditArticle(int id)
+    {
+        Navigation.NavigateTo($"/articles/edit/{id}");
+    }
+
+    private void CreateNewArticle()
+    {
+        Navigation.NavigateTo("/articles/create");
+    }
+
+    private string FormatStockQuantity(decimal stockQuantity)
+    {
+        if (stockQuantity == Math.Floor(stockQuantity))
+        {
+            return stockQuantity.ToString("0");
+        }
+        return stockQuantity.ToString("0.##");
+    }
+}
