@@ -39,9 +39,11 @@ Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Serve
 ### 3. Create Database
 
 - Create database and tables
+
 	`dotnet ef database update`
 - Add sample data (users, roles, modules)
-	'sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"`
+
+	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"`
 
 ### 4. Run the Application
 
@@ -62,28 +64,29 @@ Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Serve
 If you need to start fresh:
 
 - Drop database
+
 	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "drop-database.sql"`
 - Recreate
 
-	dotnet ef database update
+	`dotnet ef database update`
 - Reseed data
     
-	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
+	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"`
 
 ### Clear Data Only
 
 - To keep tables but clear all data:
 
-	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -d "GrezdaAccountingPublicDB" -Q " DELETE FROM UserSettings; DELETE FROM UserModuleAccesses; DELETE FROM UserBusinessUnits; DELETE FROM CompanySettings; DELETE FROM LocalizationStrings; DELETE FROM Submodules; DELETE FROM Modules; DELETE FROM BusinessUnits; DELETE FROM Languages; DELETE FROM Currencies; DELETE FROM AspNetUserRoles; DELETE FROM AspNetUsers; DELETE FROM AspNetRoles; "
+	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -d "GrezdaAccountingPublicDB" -Q " DELETE FROM UserSettings; DELETE FROM UserModuleAccesses; DELETE FROM UserBusinessUnits; DELETE FROM CompanySettings; DELETE FROM LocalizationStrings; DELETE FROM Submodules; DELETE FROM Modules; DELETE FROM BusinessUnits; DELETE FROM Languages; DELETE FROM Currencies; DELETE FROM AspNetUserRoles; DELETE FROM AspNetUsers; DELETE FROM AspNetRoles; "`
 
 
 - Then reseed
 
-	sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"
+	`sqlcmd -S "YOUR_SERVER\SQLEXPRESS" -i "seed-data.sql"`
 
 ## Project Structure
 
-PublicGrezdaAccountingAR/
+`PublicGrezdaAccountingAR/`
 
 	├── Accounting/ │
 	├── Data/                   # Database context │
