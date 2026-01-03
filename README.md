@@ -49,13 +49,13 @@ Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Serve
 
 - dotnet run
 
-	Open your browser: `https://localhost:7123`
+	Open your browser: `http://localhost:5090`
 
 ### 5. Login
 
 - **Username**: `admin`
 - **Email**: `admin@accounting.com`
-- **Password**: (use your existing password from AccountingSystem database)
+- **Password**: `Admin123!%a1`
 
 ## Useful Scripts
 
