@@ -30,7 +30,7 @@ A demo accounting system built with Blazor Server and .NET 8.
 
 Copy the template and update with your SQL Server details:
 
-`cp ..\appsettings.Template.json appsettings.json`
+`copy ..\appsettings.Template.json appsettings.json`
 
 Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Server name:
 
