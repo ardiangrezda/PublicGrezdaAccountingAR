@@ -30,7 +30,7 @@ A demo accounting system built with Blazor Server and .NET 8.
 
 Copy the template and update with your SQL Server details:
 
-`cp appsettings.Template.json appsettings.json`
+`cp ..\appsettings.Template.json appsettings.json`
 
 Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Server name:
 
@@ -121,17 +121,22 @@ If you need to start fresh:
 
 **Database connection failed?**
 - Check your SQL Server instance name with:
+
    `sqlcmd -L`
 - Make sure SQL Server is running
 
 **Migration errors?**
-- Clean and rebuild: 
+- Clean and rebuild:
+
   `dotnet clean && dotnet build`
 - Remove migrations: 
+  
   `dotnet ef migrations remove`
 
 **Port already in use?**
-- Change ports in `Properties/launchSettings.json`
+- Change ports in
+
+  `Properties/launchSettings.json`
 
 ## Security Note
 
