@@ -26,6 +26,12 @@ A demo accounting system built with Blazor Server and .NET 8.
 
 ### 2. Configure Database
 
+**⚠️ IMPORTANT: Never commit `appsettings.json` to version control!**
+
+Copy the template and update with your SQL Server details:
+
+`cp appsettings.Template.json appsettings.json`
+
 Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Server name:
 
 	{ "ConnectionStrings": {	
@@ -35,6 +41,8 @@ Copy `appsettings.Template.json` to `appsettings.json` and update your SQL Serve
 	}
 
 **Replace `YOUR_SERVER` with your computer name or SQL Server instance.**
+
+Edit `appsettings.json` and replace `YOUR_SERVER` with your actual server name.
 
 ### 3. Create Database
 
