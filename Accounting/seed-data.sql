@@ -1443,6 +1443,28 @@ VALUES
     ('cce4b8c2-d558-4073-97dc-81fe2aa420b0', 1, GETDATE(), NULL)
 PRINT '✓ UserSettings inserted (1 record)'
 
+
+-- ============================================ 
+-- Insert SalesCategories --
+-- ============================================
+PRINT 'Inserting SalesCategories...' 
+INSERT INTO [dbo].[SalesCategories] (Code, NameStringId, DescriptionStringId, IsActive) 
+VALUES 
+('DOM', 289, 322, 1), 
+('CASH', 292, 325, 1),
+('EXP', 295, 328, 1),
+('DEL', 298, 331, 1), 
+('SERV', 301, 334, 1), 
+('CN', 304, 337, 1),
+('RET', 307, 340, 1), 
+('OTHER', 310, 343, 1),
+('SUM', 313, 346, 1), 
+('PRINT', 316, 349, 1), 
+('BAR', 319, 352, 1)
+SET IDENTITY_INSERT [dbo].[SalesCategories] OFF 
+PRINT '✓ SalesCategories inserted (11 records)'
+
+
 GO
 
 PRINT ''
@@ -1460,7 +1482,9 @@ UNION ALL SELECT 'Modules', COUNT(*) FROM Modules
 UNION ALL SELECT 'Submodules', COUNT(*) FROM Submodules
 UNION ALL SELECT 'AspNetUsers', COUNT(*) FROM AspNetUsers
 UNION ALL SELECT 'AspNetRoles', COUNT(*) FROM AspNetRoles
+UNION ALL SELECT 'SalesCategories', COUNT(*) FROM SalesCategories
 ORDER BY TableName
+
 
 PRINT ''
 PRINT 'Login Credentials:'
